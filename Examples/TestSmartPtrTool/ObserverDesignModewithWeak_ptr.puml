@@ -1,0 +1,60 @@
+@startuml Observer_Pattern_UML
+
+' 定义模板基类（使用别名简化）
+class "std::enable_shared_from_this<T>" as EnableSharedFromThis {
+    + shared_from_this() : std::shared_ptr<T>
+}
+
+abstract class Observer {
+    {abstract} + update(subject: std::shared_ptr<Subject>) : void
+}
+
+class ConcreteObserver {
+    - name_ : std::string
+    - last_state_ : int
+    + update(subject: std::shared_ptr<Subject>) : void
+    + get_last_state() : int
+}
+
+abstract class Subject {
+    - observers : std::set<std::weak_ptr<Observer>>
+    + attach(observer: std::shared_ptr<Observer>) : void
+    + detach(observer: std::shared_ptr<Observer>) : void
+    + notify() : void
+    {abstract} + get_state() : int
+    {abstract} + set_state(state: int) : void
+}
+
+class ConcreteSubject {
+    - state_ : int
+    + ConcreteSubject(state: int = 0)
+    + get_state() : int
+    + set_state(state: int) : void
+}
+
+' 继承
+EnableSharedFromThis <|-- Observer
+EnableSharedFromThis <|-- Subject
+Observer <|-- ConcreteObserver
+Subject <|-- ConcreteSubject
+
+Subject "1" *-- "0..*" Observer : observers\n(weak_ptr)
+
+Observer ..> Subject : update()
+
+' note 指向类而不是成员
+note right of Subject
+    observers: std::set<std::weak_ptr<Observer>>
+    使用 weak_ptr 避免循环引用
+    使用 std::owner_less 作为比较器
+end note
+
+note right of Observer
+    update() 方法：
+    接收 Subject 的 shared_ptr
+    在 ConcreteObserver 中
+    使用 dynamic_pointer_cast
+    转换为 ConcreteSubject
+end note
+
+@enduml
